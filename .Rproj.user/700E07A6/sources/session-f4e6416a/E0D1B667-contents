@@ -32,7 +32,7 @@ library(dplyr)
 
 legend_levels <- c("0-1 bod", "2-7 bodů", "8-11 bodů", "12-30 bodů")
 legend_colors <- c("#E1E1E1", "#DDE352", "#FA944A", "#C8413C")
-legend_title  <- "Kategorie:"
+legend_title  <- "Kategorie"
 
 fill_opacity <- 0.8
 border_color <- "#666666"
@@ -51,8 +51,7 @@ make_kategorie <- function(x) {
 make_popup <- function(obec, hodnota, kategorie, label_hodnoty) {
   paste0(
     "<b>", obec, "</b><br>",
-    label_hodnoty, ": ", hodnota, "<br>",
-    legend_title, ": ", kategorie
+    label_hodnoty, ": ", hodnota, "<br>"
   )
 }
 
