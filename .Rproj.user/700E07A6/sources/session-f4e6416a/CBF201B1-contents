@@ -1,0 +1,11 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Modifikace ISV"
+
+format:
+  html:
+    theme: cosmo
+    toc: false
