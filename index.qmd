@@ -9,6 +9,18 @@ execute:
   message: false
 ---
 
+<style>
+.leaflet-container {
+  background: white;
+}
+</style>
+
+<p>
+  <a href="data-download/isv_download.xlsx" download="isv_download.xlsx" class="btn btn-primary">
+    Stáhnout data v XLSX
+  </a>
+</p>
+
 ```{r}
 library(sf)
 library(leaflet)
@@ -20,7 +32,7 @@ library(dplyr)
 
 legend_levels <- c("0-1 bod", "2-7 bodů", "8-11 bodů", "12-30 bodů")
 legend_colors <- c("#E1E1E1", "#DDE352", "#FA944A", "#C8413C")
-legend_title  <- "Pásma"
+legend_title  <- "Kategorie:"
 
 fill_opacity <- 0.8
 border_color <- "#666666"

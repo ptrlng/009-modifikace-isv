@@ -3,12 +3,14 @@ install.packages("RCzechia")
 install.packages("sf")
 install.packages("dplyr")
 install.packages("rmapshaper")
+install.packages("writexl")
 
 library(readxl)
 library(RCzechia)
 library(sf)
 library(dplyr)
 library(rmapshaper)
+library(writexl)
 
 isv_raw <- read_excel("data-raw/isv.xlsx")
 obce <- obce_polygony()
@@ -42,13 +44,28 @@ isv <- isv |>
 
 saveRDS(isv, "data-processed/isv.rds")
 
-isv_map_18 <- isv |>
-  select(NAZ_OBEC, `18_isv`, geometry) |>
+isv_map <- isv |>
+  select(NAZ_OBEC, `18_isv`, `24_isv`, geometry) |>
   st_transform(4326) |>
   ms_simplify(keep = 0.005, keep_shapes = TRUE)
 
-saveRDS(isv_map_18, "data-processed/isv-map-18.rds")
+saveRDS(isv_map, "data-processed/isv-map.rds")
 
 
+isv_download <- isv |>
+  st_drop_geometry() |>
+  select(
+    KOD_OBEC,
+    NAZ_OBEC,
+    NAZ_ORP,
+    NAZ_CZNUTS3,
+    `18_isv`,
+    `24_isv`
+  ) |>
+  rename(
+    NAZ_KRAJ = NAZ_CZNUTS3
+  )
+
+write_xlsx(isv_download, "data-download/isv_download.xlsx")
 
 

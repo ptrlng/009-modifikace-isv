@@ -3,12 +3,14 @@ install.packages("RCzechia")
 install.packages("sf")
 install.packages("dplyr")
 install.packages("rmapshaper")
+install.packages("writexl")
 
 library(readxl)
 library(RCzechia)
 library(sf)
 library(dplyr)
 library(rmapshaper)
+library(writexl)
 
 isv_raw <- read_excel("data-raw/isv.xlsx")
 obce <- obce_polygony()
@@ -50,5 +52,22 @@ isv_map <- isv |>
 saveRDS(isv_map, "data-processed/isv-map.rds")
 
 
+
+
+# Vytvoření souboru ke stažení
+isv_download <- isv |>
+  st_drop_geometry() |>
+  select(
+    KOD_OBEC,
+    NAZ_OBEC,
+    NAZ_ORP,
+    NAZ_CZNUTS3,
+    `18_isv`,
+    `24_isv`
+  ) |>
+  rename(
+    NAZ_KRAJ = NAZ_CZNUTS3
+  )
+write_xlsx(isv_download, "data-download/isv_download.xlsx")
 
 
