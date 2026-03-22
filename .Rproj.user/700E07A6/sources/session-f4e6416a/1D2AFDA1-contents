@@ -1,0 +1,75 @@
+# Import a knihovny -------------------------------------------------------
+
+library(readxl)
+library(tmap)
+library(tmaptools)
+library(janitor)
+library(RCzechia)
+library(dplyr)
+library(sf)
+
+asz_obce <- read_excel("asz/data_obce.xlsx", sheet = "obce2")
+colnames(asz_obce)
+asz_obce <- asz_obce |> 
+  clean_names() |> 
+  mutate(kod_obec = as.character(kod_obec))
+
+data_obce <- obce_polygony()  |>  # obce_polygony = vsechny obce v CR
+  inner_join(asz_obce, by = c("KOD_OBEC" = "kod_obec")) # druhy nazev promenne pochazi z dat
+# filtrovaci join = odstrani nadbytecne radky ze zdroje
+kraje <- kraje()
+
+asz_paletka <- c("#E1E1E1", "#DDE352", "#FA944A", "#C8413C")
+
+# Define the breaks
+breaks <- c(0, 1.9, 7.1, 11.9, 30)
+
+# Manually create the original labels using the "až" separator
+original_labels <- c("0 až 1", "2 až 7", "8 až 11", "12 až 30")
+
+# Create the tmap object to classify data and extract the legend
+temp_map <- tm_shape(data_obce) + 
+  tm_polygons("index_soc_vyl_2021", 
+              palette = asz_paletka, 
+              breaks = breaks, 
+              title = "Kategorizace indexu (vč. počtu obcí):")
+
+# Count the number of cases in each category
+category_counts <- table(cut(data_obce$index_soc_vyl_2021, breaks = breaks, include.lowest = TRUE))
+category_counts
+
+# Concatenate the counts to the original labels
+labels <- paste(original_labels, " (N=", category_counts, ")", sep="")
+
+kraj_shape <- tm_shape(kraje) + 
+  tm_borders(lwd = 3, col = "grey40")  
+
+index_obce <- tm_shape(data_obce) + 
+  tm_polygons("index_soc_vyl_2021", 
+              palette = asz_paletka, 
+              breaks = breaks, 
+              labels = labels, 
+              title = "Kategorizace indexu (vč. počtu obcí): ", 
+              as.count = TRUE, 
+              legend.show = TRUE, 
+              border.col = "#bababa",
+              border.lwd = 2) +
+  tm_credits(text = "Zdroj: Agentura pro sociální začleňování", size = 3, position = c(0.0, 0.00)) +  
+  tm_layout(frame = FALSE,
+            legend.outside = FALSE, 
+            legend.format = list(text.separator = "až"),
+            legend.title.size = 3.5, 
+            legend.text.size = 3, 
+            legend.title.fontface = "bold",
+            # legend.position = c(0.73, 0.75), 
+            legend.width = 3,
+            main.title = "Index sociálního vyloučení v roce 2021",
+            main.title.size = 1.5,
+            main.title.fontface = "bold",
+            inner.margins = c(0, 0, 0, 0),  
+            outer.margins = c(0, 0, 0, 0)) + 
+  kraj_shape  
+
+index_obce
+
+tmap_save(index_obce, "asz/isv_2021.png", width = 3000, height = 2067, dpi = 300, scale = 0.4, asp = 0)
