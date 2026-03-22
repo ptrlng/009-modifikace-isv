@@ -13,6 +13,20 @@ execute:
 .leaflet-container {
   background: white;
 }
+
+/* schová interní přepínač leafletu */
+.leaflet-control-layers {
+  display: none;
+}
+
+.isv-select-wrap {
+  margin-top: 12px;
+}
+
+.isv-select-wrap label {
+  font-weight: 600;
+  margin-right: 8px;
+}
 </style>
 
 <p>
@@ -21,37 +35,54 @@ execute:
   </a>
 </p>
 
+
+### Varianty ISV pro rok 2018 (analogicky platí pro rok 2024)
+- `18_orig` - původní model
+- `18_bez_abs` - model bez perspektivy ABS
+- `18_bez_lq` - model bez perspektivy LQ
+- `18_bez_abs_a_lq` - model bez perspektiv ABS a LQ, resp. model jen s REL perspektivou
+- `18_bez_pnz_a_pnb` - model bez dimenzí PnB a PnŽ
+- `18_bez_pnz_a_pnb_2krat_exek_a_uoz` - model bez dimenzí PnB a PnŽ, ovšem s dvojnásobnou vahou dimenzí Exek a UoZ
+- `18_bez_lq_a_bez_pnz_a_pnb` - model bez perspektivy LQ a bez dimenzí PnŽ a PnB
+
+
+### Kartogramy
 ```{r}
-library(sf)
 library(leaflet)
 library(dplyr)
+library(htmltools)
+library(htmlwidgets)
 
-# ----------------------------
-# Obecné nastavení pro všechny mapy
-# ----------------------------
+variants <- c(
+  "18_orig",
+  "18_bez_abs",
+  "18_bez_lq",
+  "18_bez_abs_a_lq",
+  "18_bez_pnz_a_pnb",
+  "18_bez_pnz_a_pnb_2krat_exek_a_uoz",
+  "18_bez_lq_a_bez_pnz_a_pnb",
+  "24_orig",
+  "24_bez_abs",
+  "24_bez_lq",
+  "24_bez_abs_a_lq",
+  "24_bez_pnz_a_pnb",
+  "24_bez_pnz_a_pnb_2krat_exek_a_uoz",
+  "24_bez_lq_a_bez_pnz_a_pnb"
+)
+
+default_variant <- "18_orig"
 
 legend_levels <- c("0-1 bod", "2-7 bodů", "8-11 bodů", "12-30 bodů")
 legend_colors <- c("#E1E1E1", "#DDE352", "#FA944A", "#C8413C")
-legend_title  <- "Kategorie"
-
-fill_opacity <- 0.8
-border_color <- "#666666"
-border_weight <- 0.2
 
 make_kategorie <- function(x) {
   case_when(
-    x >= 0  & x <= 1  ~ "0-1 bod",
-    x >= 2  & x <= 7  ~ "2-7 bodů",
-    x >= 8  & x <= 11 ~ "8-11 bodů",
-    x >= 12 & x <= 30 ~ "12-30 bodů",
-    TRUE ~ NA_character_
-  )
-}
-
-make_popup <- function(obec, hodnota, kategorie, label_hodnoty) {
-  paste0(
-    "<b>", obec, "</b><br>",
-    label_hodnoty, ": ", hodnota, "<br>"
+    is.na(x) ~ NA_character_,
+    x <= 1   ~ "0-1 bod",
+    x <= 7   ~ "2-7 bodů",
+    x <= 11  ~ "8-11 bodů",
+    x <= 30  ~ "12-30 bodů",
+    TRUE     ~ NA_character_
   )
 }
 
@@ -62,48 +93,312 @@ pal <- colorFactor(
   na.color = "#ffffff"
 )
 
-add_isv_layer <- function(map_obj, data, kat_col, popup_col, group_name) {
-  map_obj |>
+add_isv_layer <- function(map, data, value_col) {
+  kat <- factor(make_kategorie(data[[value_col]]), levels = legend_levels)
+
+  map |>
     addPolygons(
       data = data,
-      fillColor = pal(data[[kat_col]]),
-      fillOpacity = fill_opacity,
-      color = border_color,
-      weight = border_weight,
-      popup = data[[popup_col]],
-      group = group_name
+      fillColor = pal(kat),
+      fillOpacity = 0.8,
+      color = "#666666",
+      weight = 0.2,
+      group = value_col
     )
 }
 
-# ----------------------------
-# Data
-# ----------------------------
+isv_map <- readRDS("data-processed/isv-map.rds")
 
-isv_map <- readRDS("data-processed/isv-map.rds") |>
-  mutate(
-    kat18 = factor(make_kategorie(`18_isv`), levels = legend_levels),
-    kat24 = factor(make_kategorie(`24_isv`), levels = legend_levels),
-    popup18 = make_popup(NAZ_OBEC, `18_isv`, kat18, "18_isv"),
-    popup24 = make_popup(NAZ_OBEC, `24_isv`, kat24, "24_isv")
-  )
+map <- leaflet(isv_map, elementId = "isv_map_widget")
 
-# ----------------------------
-# Mapa
-# ----------------------------
+for (v in variants) {
+  map <- add_isv_layer(map, isv_map, v)
+}
 
-leaflet() |>
-  add_isv_layer(isv_map, "kat18", "popup18", "18 orig") |>
-  add_isv_layer(isv_map, "kat24", "popup24", "24 orig") |>
-  hideGroup("24 orig") |>
+for (v in setdiff(variants, default_variant)) {
+  map <- hideGroup(map, v)
+}
+
+map <- map |>
   addLayersControl(
-    baseGroups = c("18 orig", "24 orig"),
+    baseGroups = variants,
     options = layersControlOptions(collapsed = FALSE)
   ) |>
   addLegend(
-    position = "bottomright",
+    position = "topright",
     colors = legend_colors,
     labels = legend_levels,
-    title = legend_title,
-    opacity = fill_opacity
+    title = "Kategorie",
+    opacity = 0.8
+  ) |>
+  onRender(
+    "
+    function(el, x) {
+      function bindSelect() {
+        var select = document.getElementById('isv_layer_select');
+        var mapEl = document.getElementById(el.id);
+
+        if (!select || !mapEl) {
+          setTimeout(bindSelect, 100);
+          return;
+        }
+
+        function activateLayer(groupName) {
+          var labels = mapEl.querySelectorAll('.leaflet-control-layers-base label');
+
+          labels.forEach(function(label) {
+            var input = label.querySelector('input[type=radio]');
+            var text = label.textContent.trim();
+
+            if (input && text === groupName) {
+              input.click();
+            }
+          });
+        }
+
+        select.addEventListener('change', function() {
+          activateLayer(this.value);
+        });
+
+        activateLayer(select.value);
+      }
+
+      bindSelect();
+    }
+    "
   )
+
+tagList(
+  map,
+  div(
+    class = "isv-select-wrap",
+    tags$label(`for` = "isv_layer_select", "Zobrazená varianta ISV v kartogramu:"),
+    tags$select(
+      id = "isv_layer_select",
+      lapply(
+        variants,
+        function(v) {
+          tags$option(
+            value = v,
+            selected = if (v == default_variant) "selected" else NULL,
+            v
+          )
+        }
+      )
+    )
+  )
+)
+```
+
+
+
+### Počty obcí podle kategorií
+```{r}
+library(dplyr)
+library(knitr)
+library(sf)
+
+variants <- c(
+  "18_orig",
+  "18_bez_abs",
+  "18_bez_lq",
+  "18_bez_abs_a_lq",
+  "18_bez_pnz_a_pnb",
+  "18_bez_pnz_a_pnb_2krat_exek_a_uoz",
+  "18_bez_lq_a_bez_pnz_a_pnb",
+  "24_orig",
+  "24_bez_abs",
+  "24_bez_lq",
+  "24_bez_abs_a_lq",
+  "24_bez_pnz_a_pnb",
+  "24_bez_pnz_a_pnb_2krat_exek_a_uoz",
+  "24_bez_lq_a_bez_pnz_a_pnb"
+)
+
+kategorie_levels <- c("0-1 bod", "2-7 bodů", "8-11 bodů", "12-30 bodů")
+
+make_kategorie <- function(x) {
+  case_when(
+    is.na(x) ~ NA_character_,
+    x <= 1   ~ "0-1 bod",
+    x <= 7   ~ "2-7 bodů",
+    x <= 11  ~ "8-11 bodů",
+    x <= 30  ~ "12-30 bodů",
+    TRUE     ~ NA_character_
+  )
+}
+
+isv <- readRDS("data-processed/isv.rds") |>
+  st_drop_geometry()
+
+tabulka_kategorii <- do.call(
+  rbind,
+  lapply(variants, function(v) {
+    as.integer(
+      table(
+        factor(make_kategorie(isv[[v]]), levels = kategorie_levels)
+      )
+    )
+  })
+)
+
+tabulka_kategorii <- as.data.frame(tabulka_kategorii)
+colnames(tabulka_kategorii) <- kategorie_levels
+tabulka_kategorii <- cbind(Varianta = variants, tabulka_kategorii)
+
+kable(tabulka_kategorii, align = "lrrrr")
+```
+
+
+
+### Překryv obcí 12+ - původní model vs. varianty & varianty vs. původní model
+```{r results='asis'}
+library(knitr)
+
+isv_map <- readRDS("data-processed/isv-map.rds")
+
+variants_2018 <- c(
+  "18_orig",
+  "18_bez_abs",
+  "18_bez_lq",
+  "18_bez_abs_a_lq",
+  "18_bez_pnz_a_pnb",
+  "18_bez_pnz_a_pnb_2krat_exek_a_uoz",
+  "18_bez_lq_a_bez_pnz_a_pnb"
+)
+
+variants_2024 <- c(
+  "24_orig",
+  "24_bez_abs",
+  "24_bez_lq",
+  "24_bez_abs_a_lq",
+  "24_bez_pnz_a_pnb",
+  "24_bez_pnz_a_pnb_2krat_exek_a_uoz",
+  "24_bez_lq_a_bez_pnz_a_pnb"
+)
+
+orig_12plus_2018 <- isv_map$`18_orig` >= 12
+orig_12plus_2024 <- isv_map$`24_orig` >= 12
+
+puvodni_pocet_2018 <- sum(orig_12plus_2018, na.rm = TRUE)
+puvodni_pocet_2024 <- sum(orig_12plus_2024, na.rm = TRUE)
+
+tabulka_prekryvu_2018 <- data.frame(
+  varianta = variants_2018,
+  puvodni_12plus = puvodni_pocet_2018,
+  varianta_12plus = sapply(variants_2018, function(v) {
+    sum(isv_map[[v]] >= 12, na.rm = TRUE)
+  }),
+  spolecne_12plus = sapply(variants_2018, function(v) {
+    var_12plus <- isv_map[[v]] >= 12
+    sum(orig_12plus_2018 & var_12plus, na.rm = TRUE)
+  })
+)
+
+tabulka_prekryvu_2018$`% z původního 12+ zachováno ve variantě` <- round(
+  tabulka_prekryvu_2018$spolecne_12plus / tabulka_prekryvu_2018$puvodni_12plus * 100,
+  1
+)
+
+tabulka_prekryvu_2018$`% z variantního 12+ je zároveň v původním modelu` <- round(
+  tabulka_prekryvu_2018$spolecne_12plus / tabulka_prekryvu_2018$varianta_12plus * 100,
+  1
+)
+
+tabulka_prekryvu_2024 <- data.frame(
+  varianta = variants_2024,
+  puvodni_12plus = puvodni_pocet_2024,
+  varianta_12plus = sapply(variants_2024, function(v) {
+    sum(isv_map[[v]] >= 12, na.rm = TRUE)
+  }),
+  spolecne_12plus = sapply(variants_2024, function(v) {
+    var_12plus <- isv_map[[v]] >= 12
+    sum(orig_12plus_2024 & var_12plus, na.rm = TRUE)
+  })
+)
+
+tabulka_prekryvu_2024$`% z původního 12+ zachováno ve variantě` <- round(
+  tabulka_prekryvu_2024$spolecne_12plus / tabulka_prekryvu_2024$puvodni_12plus * 100,
+  1
+)
+
+tabulka_prekryvu_2024$`% z variantního 12+ je zároveň v původním modelu` <- round(
+  tabulka_prekryvu_2024$spolecne_12plus / tabulka_prekryvu_2024$varianta_12plus * 100,
+  1
+)
+
+priklad_2018 <- tabulka_prekryvu_2018[
+  tabulka_prekryvu_2018$varianta == "18_bez_abs",
+]
+
+cat("#### Jak tabulku číst (2018)\n\n")
+
+cat(
+  "- **První pohled** („% z původního 12+ zachováno ve variantě“) říká, jak velká část obcí, které vyšly jako **12+ v původním modelu 2018**, zůstává v pásmu **12+ i po úpravě modelu**. **Z hlediska kontinuity a návaznosti původního ISV na alternativní model jde o zásadnější pohled.**\n\n"
+)
+
+cat(
+  "- **Druhý pohled** („% z variantního 12+ je zároveň v původním modelu“) říká, jak velká část obcí, které vyšly jako **12+ v upravené variantě 2018**, už byla **12+ i v původním modelu**.\n\n"
+)
+
+cat("**Příklad z dat (2018, varianta `18_bez_abs`):**\n\n")
+
+cat(
+  "V původním modelu 2018 je **", priklad_2018$puvodni_12plus, "** obcí v pásmu 12+. ",
+  "Ve variantě `18_bez_abs` je jich **", priklad_2018$varianta_12plus, "**. ",
+  "Společných je **", priklad_2018$spolecne_12plus, "** obcí. ",
+  "To znamená, že se zachovalo **", priklad_2018$`% z původního 12+ zachováno ve variantě`, " % ** původních obcí 12+, ",
+  "a zároveň platí, že **", priklad_2018$`% z variantního 12+ je zároveň v původním modelu`, " %** obcí 12+ z této varianty už bylo 12+ i v původním modelu.\n\n",
+  sep = ""
+)
+
+cat("#### Varianty 2018\n\n")
+
+print(
+  kable(
+    tabulka_prekryvu_2018[
+      , c(
+        "varianta",
+        "varianta_12plus",
+        "spolecne_12plus",
+        "% z původního 12+ zachováno ve variantě",
+        "% z variantního 12+ je zároveň v původním modelu"
+      )
+    ],
+    col.names = c(
+      "Varianta ISV",
+      "Celkový počet obcí 12+",
+      "Společných obcí 12+",
+      "% z původního 12+ zachováno ve variantě",
+      "% z variantního 12+ je zároveň v původním modelu"
+    ),
+    align = c("l", "r", "r", "r", "r"),
+    row.names = FALSE
+  )
+)
+
+cat("\n\n#### Varianty 2024\n\n")
+
+print(
+  kable(
+    tabulka_prekryvu_2024[
+      , c(
+        "varianta",
+        "varianta_12plus",
+        "spolecne_12plus",
+        "% z původního 12+ zachováno ve variantě",
+        "% z variantního 12+ je zároveň v původním modelu"
+      )
+    ],
+    col.names = c(
+      "Varianta ISV",
+      "Celkový počet obcí 12+",
+      "Společných obcí 12+",
+      "% z původního 12+ zachováno ve variantě",
+      "% z variantního 12+ je zároveň v původním modelu"
+    ),
+    align = c("l", "r", "r", "r", "r"),
+    row.names = FALSE
+  )
+)
 ```
