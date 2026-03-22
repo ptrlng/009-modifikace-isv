@@ -5,23 +5,15 @@ format:
     toc: false
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-1 + 1
+isv <- readRDS("data-processed/isv.rds")
 ```
 
-You can add options to executable code like this
+## Kontrola dat
+
+Počet řádků: `r nrow(isv)`  
+Počet sloupců: `r ncol(isv)`
 
 ```{r}
-#| echo: false
-2 * 2
+head(isv[, 1:6])
 ```
-
-The `echo: false` option disables the printing of code (only output is displayed).

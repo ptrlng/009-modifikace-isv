@@ -136,26 +136,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="quarto" class="level2">
-<h2 class="anchored" data-anchor-id="quarto">Quarto</h2>
-<p>Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <a href="https://quarto.org" class="uri">https://quarto.org</a>.</p>
-</section>
-<section id="running-code" class="level2">
-<h2 class="anchored" data-anchor-id="running-code">Running Code</h2>
-<p>When you click the <strong>Render</strong> button a document will be generated that includes both content and the output of embedded code. You can embed code like this:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 2</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>isv <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"data-processed/isv.rds"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-</div>
-<p>You can add options to executable code like this</p>
+<section id="kontrola-dat" class="level2">
+<h2 class="anchored" data-anchor-id="kontrola-dat">Kontrola dat</h2>
+<p>Počet řádků: 6258<br>
+Počet sloupců: 40</p>
 <div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(isv[, <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 4</code></pre>
+<pre><code>  obec_kod                     obec orp_kod         orp_nazev okres_kod
+1   500011 Želechovice nad Dřevnicí    7213              Zlín    CZ0724
+2   500020        Petrov nad Desnou    7111           Šumperk    CZ0715
+3   500046                  Libhošť    8115        Nový Jičín    CZ0804
+4   500062                   Krhová    7210 Valašské Meziříčí    CZ0723
+5   500071                  Poličná    7210 Valašské Meziříčí    CZ0723
+6   500101                   Bražec    4103      Karlovy Vary    CZ0412
+         okres
+1         Zlín
+2      Šumperk
+3   Nový Jičín
+4       Vsetín
+5       Vsetín
+6 Karlovy Vary</code></pre>
 </div>
 </div>
-<p>The <code>echo: false</code> option disables the printing of code (only output is displayed).</p>
 
 
 </section>

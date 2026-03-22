@@ -4,20 +4,13 @@
     "href": "index.html",
     "title": "Modifikace ISV",
     "section": "",
-    "text": "Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see https://quarto.org."
+    "text": "isv &lt;- readRDS(\"data-processed/isv.rds\")"
   },
   {
-    "objectID": "index.html#quarto",
-    "href": "index.html#quarto",
+    "objectID": "index.html#kontrola-dat",
+    "href": "index.html#kontrola-dat",
     "title": "Modifikace ISV",
-    "section": "",
-    "text": "Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see https://quarto.org."
-  },
-  {
-    "objectID": "index.html#running-code",
-    "href": "index.html#running-code",
-    "title": "Modifikace ISV",
-    "section": "Running Code",
-    "text": "Running Code\nWhen you click the Render button a document will be generated that includes both content and the output of embedded code. You can embed code like this:\n\n1 + 1\n\n[1] 2\n\n\nYou can add options to executable code like this\n\n\n[1] 4\n\n\nThe echo: false option disables the printing of code (only output is displayed)."
+    "section": "Kontrola dat",
+    "text": "Kontrola dat\nPočet řádků: 6258\nPočet sloupců: 40\n\nhead(isv[, 1:6])\n\n  obec_kod                     obec orp_kod         orp_nazev okres_kod\n1   500011 Želechovice nad Dřevnicí    7213              Zlín    CZ0724\n2   500020        Petrov nad Desnou    7111           Šumperk    CZ0715\n3   500046                  Libhošť    8115        Nový Jičín    CZ0804\n4   500062                   Krhová    7210 Valašské Meziříčí    CZ0723\n5   500071                  Poličná    7210 Valašské Meziříčí    CZ0723\n6   500101                   Bražec    4103      Karlovy Vary    CZ0412\n         okres\n1         Zlín\n2      Šumperk\n3   Nový Jičín\n4       Vsetín\n5       Vsetín\n6 Karlovy Vary"
   }
 ]
